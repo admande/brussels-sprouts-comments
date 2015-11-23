@@ -29,7 +29,7 @@ end
 COMMENTS = []
 
 50.times do
-  COMMENTS << [Faker::Lorem.sentence(2)]
+  COMMENTS << Faker::Lorem.sentence(2)
 end
 
 db_connection do |conn|
@@ -100,8 +100,65 @@ end
 
 #4
 
+#comment count by recipe title
+# db_connection do |conn|
+#   @comments_with_name = conn.exec("SELECT recipes.id, recipes.title, comments.recipe_id, count(comments.recipe_id)
+#   FROM recipes, comments
+#   WHERE recipes.id = recipe_id
+#   GROUP BY comments.recipe_id, recipes.id
+#   ORDER BY comments.recipe_id")
+# end
+#
+# @comments_with_name.each do |each|
+#    puts "recipe title: #{each["title"]} comment count: #{each["count"]}"
+# end
+
 db_connection do |conn|
-  @comments_with_name = conn.exec("SELECT count(comments.recipe_id), comments.recipe_id FROM comments GROUP BY comments.recipe_id
-  JOIN recipes ON comments.recipe_id = recipes.id
-  ORDER BY recipe_id DESC;")
+  @comments_with_name = conn.exec("SELECT recipes.id, recipes.title, comments.recipe_id, comments.comment
+  FROM recipes, comments
+  WHERE recipes.id = recipe_id
+  GROUP BY comments.recipe_id, recipes.id, comments.comment
+  ORDER BY comments.recipe_id")
 end
+
+@comments_with_name.each do |each|
+   puts "recipe title: #{each["title"]} comment: #{each["comment"]}"
+end
+
+#5
+
+db_connection do |conn|
+  conn.exec_params("INSERT INTO recipes (title)
+  VALUES ($1)", ['Brussels Sprouts with Goat Cheese'])
+end
+
+db_connection do |conn|
+  @recipe_count_2 = conn.exec("SELECT count(*) FROM recipes;")
+end
+
+db_connection do |conn|
+  2.times do conn.exec_params("INSERT INTO comments (comment, recipe_id)
+    VALUES ($1, $2)", [Faker::Lorem.sentence(2), 12])
+  end
+end
+
+db_connection do |conn|
+  @recipe_count = conn.exec("SELECT count(*) FROM recipes;")
+end
+
+
+@recipe_count.each do |count|
+  @recipe_count_int = count["count"].to_i
+end
+
+puts "#{@recipe_count_int}"
+
+db_connection do |conn|
+  @comment_count = conn.exec("SELECT count(*) FROM comments;")
+end
+
+@comment_count.each do |count|
+  @comment_count_int = count["count"].to_i
+end
+
+puts "#{@comment_count_int}"
